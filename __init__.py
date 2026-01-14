@@ -4,13 +4,34 @@ import os
 bl_info = {
     "name": "Maxx Utilities",
     "author": "La menace",
-    "version": (0, 3, 4),
-    "blender": (4, 3, 2),
+    "version": (0, 4, 0),
+    "blender": (5, 0, 0),
     "location": "Hotkey Ctrl + D to open the pie menu",
     "warning": "",
     "doc_url": "",
     "category": "",
 }
+
+# Switch pivot point
+class SwitchPivotPoint(bpy.types.Operator):
+    bl_idname = "switch.pivot_point"
+    bl_label = "Add Collections Structure"
+    bl_description = "Switch between Median Point & 3D Cursor pivot point"
+    
+    def execute(self,context):
+        
+        tool_settings = context.scene.tool_settings
+        current_pivot = tool_settings.transform_pivot_point
+
+        if current_pivot == 'MEDIAN_POINT':
+            tool_settings.transform_pivot_point = 'CURSOR'
+        elif current_pivot == 'CURSOR':
+            tool_settings.transform_pivot_point = 'MEDIAN_POINT'
+        else:
+            tool_settings.transform_pivot_point = 'MEDIAN_POINT'
+        
+        return {'FINISHED'}
+        
 
 # Add basics collections
 class BasicCollections(bpy.types.Operator):
@@ -69,10 +90,8 @@ class SetupRenderSettingsOperator(bpy.types.Operator):
         cycles.volume_bounces = 0
         cycles.transparent_max_bounces = 8
         
-        bpy.context.scene.render.image_settings.file_format = 'PNG'
-        bpy.context.scene.render.image_settings.color_mode = 'RGBA'
-        bpy.context.scene.render.image_settings.color_depth = '16'
         bpy.context.scene.render.use_persistent_data = True
+        
 
         return {'FINISHED'}
     
@@ -114,7 +133,7 @@ class EXR_output(bpy.types.Operator):
 
     def execute(self, context):
         
-        bpy.context.scene.render.image_settings.file_format = 'OPEN_EXR_MULTILAYER'
+        bpy.context.scene.render.image_settings.media_type = 'MULTI_LAYER_IMAGE'
         bpy.context.scene.render.image_settings.color_depth = '32'
         bpy.context.scene.render.image_settings.exr_codec = 'DWAA'
         bpy.context.scene.view_layers["ViewLayer"].use_pass_cryptomatte_object = True
@@ -129,6 +148,7 @@ class PNG_output(bpy.types.Operator):
 
     def execute(self, context):
         
+        bpy.context.scene.render.image_settings.media_type = 'IMAGE'
         bpy.context.scene.render.image_settings.file_format = 'PNG'
         bpy.context.scene.render.image_settings.color_mode = 'RGBA'
         bpy.context.scene.render.image_settings.color_depth = '16'
@@ -165,38 +185,6 @@ class AddLightOperator(bpy.types.Operator):
     def execute(self, context):
         main(context)
         return {'FINISHED'}
-    
-# Viewport Wireframe
-class viewport_wireframe(bpy.types.Operator):
-    bl_idname = "viewport.wireframe"
-    bl_label = "View Wireframe"
-    bl_description = "Activate the Wireframe in object mode"
-    
-    def execute(self, context):
-        for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':  # Check if it's a 3D Viewport
-                for space in area.spaces:
-                    if space.type == 'VIEW_3D':
-                        # Toggle wireframes visibility
-                        space.overlay.show_wireframes = not space.overlay.show_wireframes
-                        return {'FINISHED'}
-        return {'CANCELLED'}
-
-# Viewport Faces Normals
-class viewport_facenormal(bpy.types.Operator):
-    bl_idname = "viewport.facenormal"
-    bl_label = "View Faces Normals"
-    bl_description = "Visualize the faces normals"
-    
-    def execute(self, context):
-        for area in bpy.context.screen.areas:
-            if area.type == 'VIEW_3D':  # Check if it's a 3D Viewport
-                for space in area.spaces:
-                    if space.type == 'VIEW_3D':
-                        # Toggle wireframes visibility
-                        space.overlay.show_face_orientation = not space.overlay.show_face_orientation
-                        return {'FINISHED'}
-        return {'CANCELLED'}
 
 # Main Pie Menu
 class RENDER_MT_pie_setup(bpy.types.Menu):
@@ -209,7 +197,7 @@ class RENDER_MT_pie_setup(bpy.types.Menu):
         pie.operator("wm.call_menu_pie", text="Render Presets").name = "RENDER_MT_pie_render_presets"
         pie.operator("object.add_light_operator", text="Add Aera Light")
         pie.operator("collection.add_structure", text="Basic Collection structure")
-        pie.operator("wm.call_menu_pie", text="Viewport Presets").name = "viewport_presets"
+        pie.operator("switch.pivot_point", text="Switch Pivot Point")
         
 # Second Pie Menu for Render Presets
 class RENDER_MT_pie_render_presets(bpy.types.Menu):
@@ -224,19 +212,6 @@ class RENDER_MT_pie_render_presets(bpy.types.Menu):
         pie.operator("render.setup_animation_render_settings", text="Lowres Render Preset")
         pie.operator("render.png_output", text="PNG Output")
         
-# Third Pie Menu for Render Presets
-class RENDER_MT_pie_viewport_presets(bpy.types.Menu):
-    bl_idname = "viewport_presets"
-    bl_label = "Viewport Presets"
-
-    def draw(self, context):
-        layout = self.layout
-        pie = layout.menu_pie()
-        pie.separator()
-        pie.separator()
-        pie.operator("viewport.facenormal", text="View Faces Normals")
-        pie.operator("viewport.wireframe", text="View Wireframe")
-
 
 addon_keymaps = []
 
@@ -245,13 +220,11 @@ def register():
     bpy.utils.register_class(SetupAnimationRenderSettingsOperator)
     bpy.utils.register_class(BasicCollections)
     bpy.utils.register_class(AddLightOperator)
-    bpy.utils.register_class(RENDER_MT_pie_viewport_presets)
+    bpy.utils.register_class(SwitchPivotPoint)
     bpy.utils.register_class(RENDER_MT_pie_render_presets)
     bpy.utils.register_class(RENDER_MT_pie_setup)
     bpy.utils.register_class(EXR_output)
     bpy.utils.register_class(PNG_output)
-    bpy.utils.register_class(viewport_wireframe)
-    bpy.utils.register_class(viewport_facenormal)
 
     # Keymap registration
     wm = bpy.context.window_manager
@@ -266,12 +239,10 @@ def unregister():
     bpy.utils.unregister_class(BasicCollections)
     bpy.utils.register_class(AddLightOperator)
     bpy.utils.unregister_class(RENDER_MT_pie_render_presets)
-    bpy.utils.register_class(RENDER_MT_pie_viewport_presets)
+    bpy.utils.register_class(SwitchPivotPoint)
     bpy.utils.unregister_class(RENDER_MT_pie_setup)
     bpy.utils.register_class(EXR_output)
     bpy.utils.register_class(PNG_output)
-    bpy.utils.register_class(viewport_wireframe)
-    bpy.utils.register_class(viewport_facenormal)
     
     wm = bpy.context.window_manager
     for km, kmi in addon_keymaps:
