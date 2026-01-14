@@ -2,7 +2,7 @@
 
 It's a Blender Addon that help to save time with some tools. It presents as a Pie Menu accessible with Ctrl + D shortcut.
 
-![ezgif-8a4bef24bc014b53](https://github.com/user-attachments/assets/f694a449-7ba8-4016-9c2e-2abaa0ff12fd)
+<img src="https://github.com/user-attachments/assets/f694a449-7ba8-4016-9c2e-2abaa0ff12fd" width="250" height="250"/>
 
 ## Maxx Light
 
